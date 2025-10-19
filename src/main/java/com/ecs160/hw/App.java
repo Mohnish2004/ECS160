@@ -124,7 +124,7 @@ public class App {
             try {
                 System.out.println("Cloning repo: " + mostStarred.getName());
                 Git.cloneRepository()
-                    .setURI(mostStarred.getHtmlUrl())
+                    .setURI(mostStarred.getHtmlUrl() + ".git")
                     .setDirectory(new File(localPath))
                     .setDepth(1)
                     .call();
