@@ -1,7 +1,13 @@
 package com.ecs160.hw.service;
 
+import com.ecs160.hw.model.Commit;
 import com.ecs160.hw.model.Repo;
 import com.ecs160.hw.util.JsonHandler;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -47,6 +53,21 @@ public class GitService {
         }
     }
 
+    public List<Repo> getRecentlyForkedRepositories(String language, int limit) throws IOException {
+        String query = "language: " + language + " fork:true";
+        String url = String.format("%s/search/repositories?q=%s&sort=updated&order=desc&per_page=%d",
+                GITHUB_API_URL, query, limit);
+
+        Request request = buildRequest(url);
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected response " + response);
+            }
+            return jsonHandler.parseRepositories(response.body().string());
+        }
+    } 
+
     public List<Repo> getRepositoryForks(String owner, String repo) throws IOException {
         String url = String.format("%s/repos/%s/%s/forks?sort=newest", GITHUB_API_URL, owner, repo);
 
@@ -60,8 +81,8 @@ public class GitService {
         }
     }
 
-    public void getRecentCommits(Repo repo) throws IOException {
-        String url = String.format("%s/repos/%s/%s/commits", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName());
+    public void getRecentCommits(Repo repo, int limit) throws IOException {
+        String url = String.format("%s/repos/%s/%s/commits?per_page=%d", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), limit);
 
         Request request = buildRequest(url);
 
@@ -70,6 +91,63 @@ public class GitService {
                 throw new IOException("Unexpected response " + response);
             }
             jsonHandler.parseCommits(response.body().string(), repo);
+        }
+    }
+
+    public void getCommitFiles(Repo repo, Commit commit) throws IOException {
+        String url = String.format("%s/repos/%s/%s/commits/%s", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), commit.getSha());
+
+        Request request = buildRequest(url);
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected response " + response);
+            }
+            jsonHandler.parseCommitFiles(response.body().string(), commit);
+        }
+    }
+
+    public void getCommitsSinceFork(Repo repo) throws IOException {
+        String url = String.format("%s/repos/%s/%s/commits?since=%s&per_page=100", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), repo.getCreatedAt());
+
+        Request request = buildRequest(url);
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.code() == 409) {
+                // if 409 (conflict), repo most likely has no commits yet
+                // set commit count for this fork repo to 0
+
+                repo.setCommitAfterForkCount(0);
+            }
+            else if (!response.isSuccessful()) {
+                throw new IOException("Unexpected response " + response);
+            } else {
+                String body = response.body().string();
+                jsonHandler.parseCommitCount(body, repo);
+            }
+        }
+    }
+
+    public void getRepositoryContents(Repo repo, String path) throws IOException {
+        String url = String.format("%s/repos/%s/%s/contents/%s", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), path);
+
+        Request request = buildRequest(url);
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                return;
+            }
+            String body = response.body().string();
+            jsonHandler.parseRepoContents(body, repo, path);
+
+            JsonArray contents = JsonParser.parseString(body).getAsJsonArray();
+            for (JsonElement element: contents) {
+                JsonObject item = element.getAsJsonObject();
+                if ("dir".equals(item.get("type").getAsString())) {
+                    String dirPath = item.get("path").getAsString();
+                    getRepositoryContents(repo, dirPath);
+                }
+            }
         }
     }
 }
