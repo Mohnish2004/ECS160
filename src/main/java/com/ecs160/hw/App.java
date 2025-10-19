@@ -126,6 +126,7 @@ public class App {
                 Git.cloneRepository()
                     .setURI(mostStarred.getHtmlUrl())
                     .setDirectory(new File(localPath))
+                    .setDepth(1)
                     .call();
             } catch (Exception e) {
                 System.err.println("Error cloning repository: " + e.getMessage());
