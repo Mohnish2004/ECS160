@@ -40,9 +40,12 @@ public class JsonHandler {
                     repoJson.get("name").getAsString(),
                     ownerJson.get("login").getAsString(),
                     repoJson.get("html_url").getAsString(),
+                    repoJson.get("clone_url").getAsString(),
                     repoJson.get("forks_count").getAsInt(),
+                    repoJson.get("stargazers_count").getAsInt(),
                     language,
-                    repoJson.get("open_issues_count").getAsInt()
+                    repoJson.get("open_issues_count").getAsInt(),
+                    repoJson.get("created_at").getAsString()
                 );
                 repositories.add(repo);
             } catch (Exception e) {
@@ -91,6 +94,46 @@ public class JsonHandler {
                 repo.addCommit(commit);
             } catch (Exception e) {
                 System.err.println("Error parsing commit: " + e.getMessage());
+            }
+        }
+    }
+
+    public void parseCommitFiles(String json, Commit commit) {
+        JsonArray files = JsonParser.parseString(json).getAsJsonObject().getAsJsonArray("files");
+        List<String> modifiedFileNames = new ArrayList<String>();
+        
+        for (JsonElement element : files) {
+            try {
+                JsonObject fileJson = element.getAsJsonObject();
+                String status = fileJson.get("status").getAsString();
+                if ("modified".equals(status)) {
+                    String fileName = fileJson.get("filename").getAsString();
+                    modifiedFileNames.add(fileName);
+                }
+            } catch (Exception e) {
+                System.err.println("Error parsing commit file: " + e.getMessage());
+            }
+        }
+        commit.setModifiedFiles(modifiedFileNames);
+    }
+
+    public void parseCommitCount(String json, Repo repo) {
+        JsonArray commits = JsonParser.parseString(json).getAsJsonArray();
+
+        repo.setCommitAfterForkCount(commits.size());
+    }
+
+    public void parseRepoContents(String json, Repo repo, String path) {
+        JsonArray contents = JsonParser.parseString(json).getAsJsonArray();
+
+        for (JsonElement element: contents) {
+            JsonObject fileJson = element.getAsJsonObject();
+            String type = fileJson.get("type").getAsString();
+            // only add files
+            if ("file".equals(type)) {
+                String fileName = fileJson.get("name").getAsString();
+                String fullPath = path.isEmpty() ? fileName : path + "/" + fileName;
+                repo.addFile(fullPath);
             }
         }
     }
