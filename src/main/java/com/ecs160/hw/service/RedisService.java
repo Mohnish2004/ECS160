@@ -1,9 +1,8 @@
 package com.ecs160.hw.service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-
 
 import com.ecs160.hw.model.Repo;
 
@@ -18,18 +17,23 @@ public class RedisService {
         jedis = new Jedis("localhost", 6379);
     }
 
-    public void storeRepo(Repo repo) {
-        // Create a hash map to store repo details
-        Map<String, String> repoMap = new HashMap<>();
-        repoMap.put("name", repo.getName());
-        repoMap.put("owner", repo.getOwnerLogin());
-        repoMap.put("url", repo.getHtmlUrl());
-        repoMap.put("language", repo.getLanguage());
-        repoMap.put("stars", String.valueOf(repo.getStargazersCount()));
-        repoMap.put("forks", String.valueOf(repo.getForksCount()));
-        repoMap.put("openIssues", String.valueOf(repo.getOpenIssuesCount()));
-        repoMap.put("commitsAfterFork", String.valueOf(repo.getCommitsAfterForkCount()));
-        jedis.hset("UUID: " + UUID.randomUUID().toString(), repoMap);
+    public void storeRepos(List<Repo> repos, String language) {
+        int iter = 0;
+        for (Repo repo : repos) {
+            iter++;
+            String key = "repos:" + language + ":" + String.valueOf(iter);
+            // Create a hash map to store repo details
+            Map<String, String> repoMap = new HashMap<>();
+            repoMap.put("name", repo.getName());
+            repoMap.put("owner", repo.getOwnerLogin());
+            repoMap.put("url", repo.getHtmlUrl());
+            repoMap.put("language", repo.getLanguage());
+            repoMap.put("stars", String.valueOf(repo.getStargazersCount()));
+            repoMap.put("forks", String.valueOf(repo.getForksCount()));
+            repoMap.put("openIssues", String.valueOf(repo.getOpenIssuesCount()));
+            repoMap.put("commitsAfterFork", String.valueOf(repo.getCommitsAfterForkCount()));
+            jedis.hset(key, repoMap);
+        }
     }
 
     public void close() {
