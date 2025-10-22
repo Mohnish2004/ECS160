@@ -101,6 +101,7 @@ public class App {
                     System.err.println("Error getting repo contents: " + e.getMessage());
                 }
 
+                // TODO: store whether each repo is a tutorial 
                 boolean isRealCodebase = MetricsHandler.isRealCodebase(repo);
                 if (isRealCodebase) {
                     System.out.println("Repo: " + repo.getName() + " is real");
@@ -109,17 +110,19 @@ public class App {
                 }
             }
 
-            // get most popular repo 
+            // get most popular repo that is not a tutorial
             int maxStars = 0;
             Repo mostStarred = null;
             for (Repo repo: topRepos) {
-                int stars = repo.getStargazersCount();
-                if (stars > maxStars) {
-                    maxStars = stars;
-                    mostStarred = repo;
+                if (MetricsHandler.isRealCodebase(repo)) {
+                    int stars = repo.getStargazersCount();
+                    if (stars > maxStars) {
+                        maxStars = stars;
+                        mostStarred = repo;
+                    }
                 }
             }
-            // clone most popular repo
+            // clone most popular repo that is not a tutorial
             String localPath = "./cloned_repos/" + mostStarred.getName();
             try {
                 System.out.println("Cloning repo: " + mostStarred.getName());
