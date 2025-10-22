@@ -3,6 +3,7 @@ package com.ecs160.hw;
 import com.ecs160.hw.model.Commit;
 import com.ecs160.hw.model.Repo;
 import com.ecs160.hw.service.GitService;
+import com.ecs160.hw.service.RedisService;
 import com.ecs160.hw.util.JsonHandler;
 import com.ecs160.hw.util.MetricsHandler;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class App {
         
         JsonHandler jsonHandler = new JsonHandler();
         GitService gitService = new GitService(jsonHandler);
+        RedisService redisService = new RedisService();
         
         String[] languages = {"Java", "C", "Rust"};
 
@@ -28,6 +30,13 @@ public class App {
                 topRepos = gitService.getTopRepositories(language, 10);
             } catch (Exception e) {
                 System.err.println("Error getting repos: " + e.getMessage());
+            }
+
+            //store repos in Redis
+            try {
+                redisService.storeRepos(topRepos, language);
+            } catch (Exception e) {
+                System.err.println("Error storing repos in Redis: " + e.getMessage());
             }
         
             // total stars across the top 10 repos
@@ -136,5 +145,6 @@ public class App {
             }
             
         }
+        redisService.close();
     }
 }
