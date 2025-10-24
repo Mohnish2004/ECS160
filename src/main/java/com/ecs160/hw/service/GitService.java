@@ -135,7 +135,7 @@ public class GitService {
     
     try (Response response = client.newCall(repoRequest).execute()) {
         if (!response.isSuccessful()) {
-            throw new IOException("Unexpected response " + response);;
+            throw new IOException("Unexpected response " + response);
         }
         JsonObject repoData = JsonParser.parseString(response.body().string()).getAsJsonObject();
         branch = repoData.get("default_branch").getAsString();
