@@ -142,7 +142,7 @@ public class GitService {
     }
     
     // Get the tree 
-    String treeUrl = String.format("%s/repos/%s/%s/git/trees/%s?recursive=1", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), defaultBranch);
+    String treeUrl = String.format("%s/repos/%s/%s/git/trees/%s?recursive=1", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), branch);
 
     Request request = buildRequest(treeUrl);
 
