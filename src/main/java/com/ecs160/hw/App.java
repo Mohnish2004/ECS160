@@ -31,13 +31,6 @@ public class App {
             } catch (Exception e) {
                 System.err.println("Error getting repos: " + e.getMessage());
             }
-
-            //store repos in Redis
-            try {
-                redisService.storeRepos(topRepos, language);
-            } catch (Exception e) {
-                System.err.println("Error storing repos in Redis: " + e.getMessage());
-            }
         
             // total stars across the top 10 repos
             int totalStars = MetricsHandler.getTotalStars(topRepos);
@@ -105,7 +98,7 @@ public class App {
                 // get repo contents
                 try {
                     System.out.println("Getting repo contents for: " + repo.getName());
-                    gitService.getRepositoryContents(repo, "");
+                    gitService.getRepositoryContents(repo);
                 } catch (Exception e) {
                     System.err.println("Error getting repo contents: " + e.getMessage());
                 }
@@ -142,6 +135,13 @@ public class App {
                     .call();
             } catch (Exception e) {
                 System.err.println("Error cloning repository: " + e.getMessage());
+            }
+
+            //store repos in Redis
+            try {
+                redisService.storeRepos(topRepos, language);
+            } catch (Exception e) {
+                System.err.println("Error storing repos in Redis: " + e.getMessage());
             }
             
         }

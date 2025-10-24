@@ -123,17 +123,18 @@ public class JsonHandler {
         repo.setCommitAfterForkCount(commits.size());
     }
 
-    public void parseRepoContents(String json, Repo repo, String path) {
-        JsonArray contents = JsonParser.parseString(json).getAsJsonArray();
+    public void parseRepoTree(String json, Repo repo) {
+        JsonObject treeData = JsonParser.parseString(json).getAsJsonObject();
+        JsonArray tree = treeData.getAsJsonArray("tree");
 
-        for (JsonElement element: contents) {
-            JsonObject fileJson = element.getAsJsonObject();
-            String type = fileJson.get("type").getAsString();
-            // only add files
-            if ("file".equals(type)) {
-                String fileName = fileJson.get("name").getAsString();
-                String fullPath = path.isEmpty() ? fileName : path + "/" + fileName;
-                repo.addFile(fullPath);
+        for (JsonElement element : tree) {
+            JsonObject item = element.getAsJsonObject();
+            String type = item.get("type").getAsString();
+            
+            // Only add files 
+            if ("blob".equals(type)) {
+                String path = item.get("path").getAsString();
+                repo.addFile(path);
             }
         }
     }
