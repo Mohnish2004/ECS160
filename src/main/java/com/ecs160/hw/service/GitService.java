@@ -3,8 +3,6 @@ package com.ecs160.hw.service;
 import com.ecs160.hw.model.Commit;
 import com.ecs160.hw.model.Repo;
 import com.ecs160.hw.util.JsonHandler;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -128,26 +126,32 @@ public class GitService {
         }
     }
 
-    public void getRepositoryContents(Repo repo, String path) throws IOException {
-        String url = String.format("%s/repos/%s/%s/contents/%s", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), path);
-
-        Request request = buildRequest(url);
-
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                return;
-            }
-            String body = response.body().string();
-            jsonHandler.parseRepoContents(body, repo, path);
-
-            JsonArray contents = JsonParser.parseString(body).getAsJsonArray();
-            for (JsonElement element: contents) {
-                JsonObject item = element.getAsJsonObject();
-                if ("dir".equals(item.get("type").getAsString())) {
-                    String dirPath = item.get("path").getAsString();
-                    getRepositoryContents(repo, dirPath);
-                }
-            }
+    public void getRepositoryContents(Repo repo) throws IOException {
+    // Get the default branch
+    String url = String.format("%s/repos/%s/%s", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName());
+    
+    Request repoRequest = buildRequest(url);
+    String branch;
+    
+    try (Response response = client.newCall(repoRequest).execute()) {
+        if (!response.isSuccessful()) {
+            throw new IOException("Unexpected response " + response);;
         }
+        JsonObject repoData = JsonParser.parseString(response.body().string()).getAsJsonObject();
+        branch = repoData.get("default_branch").getAsString();
     }
+    
+    // Get the tree 
+    String treeUrl = String.format("%s/repos/%s/%s/git/trees/%s?recursive=1", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), branch);
+
+    Request request = buildRequest(treeUrl);
+
+    try (Response response = client.newCall(request).execute()) {
+        if (!response.isSuccessful()) {
+            throw new IOException("Unexpected response " + response); 
+        }
+        String body = response.body().string();
+        jsonHandler.parseRepoTree(body, repo);
+    }
+}
 }
