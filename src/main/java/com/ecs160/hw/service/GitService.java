@@ -127,31 +127,44 @@ public class GitService {
     }
 
     public void getRepositoryContents(Repo repo) throws IOException {
-    // Get the default branch
-    String url = String.format("%s/repos/%s/%s", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName());
-    
-    Request repoRequest = buildRequest(url);
-    String branch;
-    
-    try (Response response = client.newCall(repoRequest).execute()) {
-        if (!response.isSuccessful()) {
-            throw new IOException("Unexpected response " + response);
+        // Get the default branch
+        String url = String.format("%s/repos/%s/%s", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName());
+        
+        Request repoRequest = buildRequest(url);
+        String branch;
+        
+        try (Response response = client.newCall(repoRequest).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected response " + response);
+            }
+            JsonObject repoData = JsonParser.parseString(response.body().string()).getAsJsonObject();
+            branch = repoData.get("default_branch").getAsString();
         }
-        JsonObject repoData = JsonParser.parseString(response.body().string()).getAsJsonObject();
-        branch = repoData.get("default_branch").getAsString();
-    }
-    
-    // Get the tree 
-    String treeUrl = String.format("%s/repos/%s/%s/git/trees/%s?recursive=1", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), branch);
+        
+        // Get the tree 
+        String treeUrl = String.format("%s/repos/%s/%s/git/trees/%s?recursive=1", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), branch);
 
-    Request request = buildRequest(treeUrl);
+        Request request = buildRequest(treeUrl);
 
-    try (Response response = client.newCall(request).execute()) {
-        if (!response.isSuccessful()) {
-            throw new IOException("Unexpected response " + response); 
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected response " + response); 
+            }
+            String body = response.body().string();
+            jsonHandler.parseRepoTree(body, repo);
         }
-        String body = response.body().string();
-        jsonHandler.parseRepoTree(body, repo);
     }
-}
+
+    public void getRepositoryIssues(Repo repo, int limit) throws IOException {
+        String url = String.format("%s/repos/%s/%s/issues?state=all&per_page=%d", GITHUB_API_URL, repo.getOwnerLogin(), repo.getName(), limit);
+        
+        Request request = buildRequest(url);
+        
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected response " + response);
+            }
+            jsonHandler.parseIssues(response.body().string(), repo);
+        }
+    }
 }

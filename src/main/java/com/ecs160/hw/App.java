@@ -47,11 +47,17 @@ public class App {
                 System.out.println("    Repo name: " + repo.getName());
                 // get 50 most recent commits for repo 
                 try {
-                    gitService.getRecentCommits(repo, 50);
+                    gitService.getRecentCommits(repo, 20);
                 } catch (Exception e) {
                     System.err.println("Error getting commits: " + e.getMessage());
                 }
-
+                // get 30 issues per repo
+                try {
+                    System.out.println("Getting issues for: " + repo.getName());
+                    gitService.getRepositoryIssues(repo, 30);
+                } catch (Exception e) {
+                    System.err.println("Error getting issues: " + e.getMessage());
+                }
                 // get commit files for each commit 
                 for (Commit commit: repo.getRecentCommits()) {
                     try {

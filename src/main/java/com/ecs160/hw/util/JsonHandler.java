@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ecs160.hw.model.Commit;
+import com.ecs160.hw.model.Issue;
 import com.ecs160.hw.model.Owner;
 import com.ecs160.hw.model.Repo;
 import java.time.ZonedDateTime;
@@ -138,4 +139,30 @@ public class JsonHandler {
             }
         }
     }
+
+    public void parseIssues(String json, Repo repo) {
+    JsonArray issues = JsonParser.parseString(json).getAsJsonArray();
+    
+    for (JsonElement element : issues) {
+        try {
+            JsonObject issueJson = element.getAsJsonObject();
+            if (issueJson.has("pull_request")) {
+                continue;
+            }
+            Integer issueNumber = issueJson.get("number").getAsInt();
+            String title = issueJson.get("title").getAsString();
+            String state = issueJson.get("state").getAsString();
+            String body = issueJson.has("body") && !issueJson.get("body").isJsonNull() ? issueJson.get("body").getAsString() : "";
+            ZonedDateTime createdAt = ZonedDateTime.parse(issueJson.get("created_at").getAsString());
+            ZonedDateTime updatedAt = ZonedDateTime.parse(issueJson.get("updated_at").getAsString());
+            
+            Issue issue = new Issue(issueNumber, title, body, state, createdAt, updatedAt);
+            repo.addIssue(issue);
+        } catch (Exception e) {
+            System.err.println("Error parsing issue: " + e.getMessage());
+        }
+    }
+}
+
+
 }
